@@ -11,12 +11,9 @@ GitHub Repository URL: https://github.com/sc128307/web322-app
 
 ********************************************************************************/ 
 
-
-// Import the express module
+// Import the required modules
 const express = require('express');
 const path = require('path');
-
-// Require the store-service module
 const storeService = require('./store-service');
 
 // Create an instance of express
@@ -37,7 +34,7 @@ storeService.initialize()
     console.error(`Data initialization failed: ${err}`);
   });
 
-// Define a route for "/"
+// Route "/" must redirect the user to the "/about" route
 app.get('/', (req, res) => {
   res.redirect('/about');
 });
