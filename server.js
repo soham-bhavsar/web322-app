@@ -6,7 +6,7 @@ I declare that this assignment is my own work in accordance with Seneca Academic
 Name: Zexing Cheng
 Student ID: 162654214
 Date: 2024-06-06
-Vercel Web App URL: https://vercel.com/zexing-chengs-projects/web322-app
+Vercel Web App URL: https://web322-app-zexing-chengs-projects.vercel.app/
 GitHub Repository URL: https://github.com/sc128307/web322-app
 
 ********************************************************************************/ 
