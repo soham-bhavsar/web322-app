@@ -26,13 +26,18 @@ app.use(express.static('public'));
 const PORT = process.env.PORT || 8080;
 
 // Initialize the store service
-storeService.initialize()
+  storeService.initialize()
   .then(() => {
     console.log('Data initialization successful');
+    // Start the server and listen on the specified port only if initialization is successful
+    app.listen(PORT, () => {
+      console.log(`Express http server listening on port ${PORT}`);
+    });
   })
   .catch((err) => {
     console.error(`Data initialization failed: ${err}`);
   });
+
 
 // Route "/" must redirect the user to the "/about" route
 app.get('/', (req, res) => {
@@ -51,7 +56,7 @@ app.get('/shop', (req, res) => {
       res.json(data);
     })
     .catch((err) => {
-      res.status(500).send(err);
+      res.status(500).json({ message: err });
     });
 });
 
@@ -62,7 +67,7 @@ app.get('/items', (req, res) => {
       res.json(data);
     })
     .catch((err) => {
-      res.status(500).send(err);
+      res.status(500).json({ message: err });
     });
 });
 
@@ -73,16 +78,11 @@ app.get('/categories', (req, res) => {
       res.json(data);
     })
     .catch((err) => {
-      res.status(500).send(err);
+      res.status(500).json({ message: err });
     });
 });
 
 // Handle 404 errors
 app.use((req, res) => {
   res.status(404).send('Page Not Found');
-});
-
-// Start the server and listen on the specified port
-app.listen(PORT, () => {
-  console.log(`Express http server listening on port ${PORT}`);
 });
