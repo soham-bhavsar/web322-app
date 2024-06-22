@@ -88,7 +88,7 @@ const getItemsByCategory = (category) => {
     if (filteredItems.length > 0) {
       resolve(filteredItems);
     } else {
-      reject('no results returned');
+      reject('no results returned'); // reject and pass a message if no categories are found
     }
   });
 };
@@ -101,7 +101,7 @@ const getItemsByMinDate = (minDateStr) => {
     if (filteredItems.length > 0) {
       resolve(filteredItems);
     } else {
-      reject('no results returned');
+      reject('no results returned'); // reject and pass a message if no items are found
     }
   });
 };
@@ -113,7 +113,7 @@ const getItemById = (id) => {
     if (item) {
       resolve(item);
     } else {
-      reject('no results returned');
+      reject('no results returned'); // reject and pass a message if no items are found
     }
   });
 };
