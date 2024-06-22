@@ -15,9 +15,24 @@ GitHub Repository URL: https://github.com/sc128307/web322-app
 const express = require('express');
 const path = require('path');
 const storeService = require('./store-service');
+const multer = require("multer");
+const cloudinary = require('cloudinary').v2
+const streamifier = require('streamifier')
 
-// Create an instance of express
+// sets the cloudinary configuration
+cloudinary.config({
+  cloud_name: 'dwnrmkq1a',
+  api_key: '259797427444839 ',
+  api_secret: 'fEc_j4EMpZaZ8pogGYhleBzWLEA',
+  secure: true
+});
+
+
+// Create the instances of the required modules
 const app = express();
+const upload = multer(); // no { storage: storage } since we are not using disk storage
+
+
 
 // Use the static middleware to serve static files from the "public" directory
 app.use(express.static('public'));
@@ -86,3 +101,83 @@ app.get('/categories', (req, res) => {
 app.use((req, res) => {
   res.status(404).send('Page Not Found');
 });
+
+// Define a route for "/items/add"
+app.get('/items/add', (req, res) => {
+  res.sendFile(path.join(__dirname, 'views', 'addItem.html'));
+});
+
+// Define a route for "/items/add"
+app.post('/items/add', upload.single('featureImage'), (req, res) => {
+  if (req.file) {
+    let streamUpload = (req) => {
+      return new Promise((resolve, reject) => {
+        let stream = cloudinary.uploader.upload_stream(
+          (error, result) => {
+            if (result) {
+              resolve(result);
+            } else {
+              reject(error);
+            }
+          }
+        );
+
+        streamifier.createReadStream(req.file.buffer).pipe(stream);
+      });
+    };
+
+    async function upload(req) {
+      let result = await streamUpload(req);
+      console.log(result);
+      return result;
+    }
+
+    upload(req).then((uploaded) => {
+      processItem(uploaded.url);
+    });
+  } else {
+    processItem("");
+  }
+
+  function processItem(imageUrl) {
+    req.body.featureImage = imageUrl;
+    storeService.addItem(req.body).then((newItem) => {
+      res.redirect('/items');
+    }).catch((err) => {
+      res.status(500).send(err);
+    });
+  }
+});
+
+// Route to view items
+app.get('/items', (req, res) => {
+  if (req.query.category) {
+    storeService.getItemsByCategory(req.query.category).then((items) => {
+      res.json(items);
+    }).catch((err) => {
+      res.status(500).send(err);
+    });
+  } else if (req.query.minDate) {
+    storeService.getItemsByMinDate(req.query.minDate).then((items) => {
+      res.json(items);
+    }).catch((err) => {
+      res.status(500).send(err);
+    });
+  } else {
+    storeService.getAllItems().then((items) => {
+      res.json(items);
+    }).catch((err) => {
+      res.status(500).send(err);
+    });
+  }
+});
+
+// Route to get item by id
+app.get('/item/:id', (req, res) => {
+  storeService.getItemById(req.params.id).then((item) => {
+    res.json(item);
+  }).catch((err) => {
+    res.status(500).send(err);
+  });
+});
+
