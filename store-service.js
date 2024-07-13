@@ -59,6 +59,19 @@ const getPublishedItems = () => {
   });
 };
 
+// Function to filter items by both published status and category
+const getPublishedItemsByCategory = (category) => {
+  return new Promise((resolve, reject) => {
+    const publishedItems = items.filter(item => item.published === true && item.category == category);
+    if (publishedItems.length > 0) {
+      resolve(publishedItems);
+    } else {
+      reject('no results returned');
+    }
+  });
+};
+
+
 // Function to get all categories
 const getCategories = () => {
   return new Promise((resolve, reject) => {
@@ -74,8 +87,11 @@ const getCategories = () => {
 const addItem = (itemData) => {
   return new Promise((resolve, reject) => {
     itemData.published = itemData.published !== undefined ? true : false;
+    // Set the postDate to the current date in YYYY-MM-DD format
+    itemData.postDate = new Date().toISOString().slice(0, 10);
     itemData.id = items.length + 1;
-    items.push(itemData);
+    // Add the item to the start of the items array to show it at the top
+    items.unshift(itemData);
     resolve('item added');
   });
 };
@@ -127,5 +143,6 @@ module.exports = {
   addItem,
   getItemsByCategory,
   getItemsByMinDate,
-  getItemById
+  getItemById,
+  getPublishedItemsByCategory,
 };
