@@ -1,0 +1,18 @@
+{
+  "name": "322web-app",
+  "version": "1.0.0",
+  "description": "assignment2 web",
+  "main": "server.js",
+  "scripts": {
+    "test": "server.js",
+    "start": "node server.js"
+  },
+  "keywords": [
+    "assignment2"
+  ],
+  "author": "Soham Bhavsar",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.21.1"
+  }
+}
