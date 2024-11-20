@@ -3,7 +3,7 @@ const fs = require('fs').promises;  // Use the Promise-based version of fs
 let items = [];
 let categories = [];
 
-// Initialize the data
+// Initialize the data by reading the items and categories JSON files
 async function initialize() {
   try {
     const itemsData = await fs.readFile('./data/items.json', 'utf8');

@@ -1,0 +1,10 @@
+<h1>Items</h1>
+<div class="row">
+    {{#each items}}
+    <div class="col-md-4">
+        <h2>{{this.title}}</h2>
+        <p>Price: ${{this.price}}</p>
+        <p>Date Posted: {{this.postDate}}</p>
+    </div>
+    {{/each}}
+</div>

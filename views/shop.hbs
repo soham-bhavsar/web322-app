@@ -1,0 +1,13 @@
+<h1>Shop</h1>
+{{#if items}}
+<div class="row">
+    {{#each items}}
+    <div class="col-md-4">
+        <h3>{{this.title}}</h3>
+        <p>Price: ${{this.price}}</p>
+    </div>
+    {{/each}}
+</div>
+{{else}}
+<p>No items available.</p>
+{{/if}}

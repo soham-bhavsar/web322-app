@@ -1,84 +1,64 @@
-/*********************************************************************************
-WEB322 – Assignment 02
-I declare that this assignment is my own work in accordance with Seneca Academic Policy.
-No part of this assignment has been copied manually or electronically from any other source 
-(including 3rd party web sites) or distributed to other students.
-
-Name: Soham Bhavsar 
-Student ID: 136231222
-Date: 09/10/2024
-Replit Web App URL: 
-GitHub Repository URL:
-********************************************************************************/
-
-
-// Import required modules
 const express = require('express');
+const exphbs = require('express-handlebars');
 const path = require('path');
-const storeService = require('./store-service.js'); // Import the store-service module
+const storeService = require('./store-service.js');
 
-// Initialize express app
 const app = express();
-
-// Use port 3000 if 8080 is busy
 const PORT = process.env.PORT || 3000;
 
-// Serve static files from the public folder
+// Handlebars setup
+app.engine('.hbs', exphbs.engine({ extname: '.hbs' }));
+app.set('view engine', '.hbs');
+app.set('views', path.join(__dirname, 'views'));
+
+// Middleware for static files
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Redirect the root route ("/") to "/about"
-app.get('/', (req, res) => res.redirect('/about'));
-
-// Serve the about.html page
-app.get('/about', (req, res) => {
-  res.sendFile(path.resolve(__dirname, 'views', 'about.html'));
+// Middleware for active route
+app.use((req, res, next) => {
+    let route = req.path.substring(1);
+    app.locals.activeRoute = '/' + (isNaN(route.split('/')[1]) ? route.replace(/\/(?!.*)/, '') : route.replace(/\/(.*)/, ''));
+    next();
 });
 
-// Get all items route
+// Routes
+app.get('/', (req, res) => res.redirect('/shop'));
+app.get('/about', (req, res) => res.render('about'));
+app.get('/additem', (req, res) => res.render('additem'));
+
 app.get('/items', async (req, res) => {
-  try {
-    const items = await storeService.getAllItems();
-    res.json(items);
-  } catch (error) {
-    res.status(500).json({ message: error });
-  }
+    try {
+        const items = await storeService.getAllItems();
+        res.render('items', { items });
+    } catch {
+        res.render('items', { message: 'No results found.' });
+    }
 });
 
-// Get published items route
-app.get('/shop', async (req, res) => {
-  try {
-    const publishedItems = await storeService.getPublishedItems();
-    res.json(publishedItems);
-  } catch (error) {
-    res.status(500).json({ message: error });
-  }
-});
-
-// Get all categories route
 app.get('/categories', async (req, res) => {
-  try {
-    const categories = await storeService.getCategories();
-    res.json(categories);
-  } catch (error) {
-    res.status(500).json({ message: error });
-  }
+    try {
+        const categories = await storeService.getCategories();
+        res.render('categories', { categories });
+    } catch {
+        res.render('categories', { message: 'No results found.' });
+    }
 });
 
-// Catch-all 404 route for undefined paths
+app.get('/shop', async (req, res) => {
+    try {
+        const publishedItems = await storeService.getPublishedItems();
+        res.render('shop', { items: publishedItems });
+    } catch {
+        res.render('shop', { message: 'No items available.' });
+    }
+});
+
+// Catch-all 404 route
 app.use((req, res) => {
-  res.status(404).send("Page Not Found");
+    res.status(404).render('404');
 });
 
-// Initialize the store and start the server
-const startServer = async () => {
-  try {
-    await storeService.initialize();
-    app.listen(PORT, () => {
-      console.log(`Server is running on port ${PORT}`);
-    });
-  } catch (error) {
-    console.error(`Failed to initialize the store: ${error}`);
-  }
-};
-
-startServer();
+// Start server
+app.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
+});

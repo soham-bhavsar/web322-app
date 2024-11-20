@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add New Car</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: auto;
+            padding: 20px;
+        }
+        form {
+            display: flex;
+            flex-direction: column;
+        }
+        label {
+            margin-top: 10px;
+        }
+        input, select, textarea {
+            padding: 8px;
+            font-size: 16px;
+            margin-top: 5px;
+        }
+        button {
+            margin-top: 20px;
+            padding: 10px;
+            font-size: 18px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+<body>
+    <h1>Add New Car</h1>
+    <form action="submit_item.php" method="POST">
+        <label for="title">Car Title:</label>
+        <input type="text" id="title" name="title" required>
+
+        <label for="category">Category:</label>
+        <select id="category" name="category" required>
+            <option value="1">Home, Garden</option>
+            <option value="2">Electronics, Computers, Video Games</option>
+            <option value="3">Clothing</option>
+            <option value="4">Sports & Outdoors</option>
+            <option value="5">Pets</option>
+        </select>
+
+        <label for="postDate">Post Date:</label>
+        <input type="date" id="postDate" name="postDate" required>
+
+        <label for="featureImage">Image URL:</label>
+        <input type="url" id="featureImage" name="featureImage" placeholder="https://example.com/image.jpg" required>
+
+        <label for="price">Price:</label>
+        <input type="number" id="price" name="price" step="0.01" required>
+
+        <label for="description">Description:</label>
+        <textarea id="description" name="description" rows="4" required></textarea>
+
+        <button type="submit">Add Car</button>
+    </form>
+</body>
+</html>
