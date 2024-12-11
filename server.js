@@ -12,175 +12,152 @@ Name: Soham
 Student ID: 136231222
 Date: 2024-06-12
 Vercel Web App URL: 
-GitHub Repository URL:
+GitHub Repository URL:https://github.com/soham-bhavsar/web322-app.git
 
 ********************************************************************************/ 
 
 const express = require('express');
-const app = express();
-const storeService = require('./store-service');
 const path = require('path');
+const exphbs = require('express-handlebars');
+const clientSessions = require('client-sessions');
+const authData = require('./auth-service');
+const storeService = require('./store-service');
 const multer = require('multer');
 const cloudinary = require('cloudinary').v2;
 const streamifier = require('streamifier');
-const exphbs = require('express-handlebars');
-const Handlebars = require('handlebars');
 
+const app = express();
+const PORT = process.env.PORT || 8080;
 
-// Serving static files
-app.use(express.static('public'));
-// Middleware to parse form data
+// Middleware
 app.use(express.urlencoded({ extended: true }));
-// Route to about page
-app.use((req, res, next) => {
-  let route = req.path.substring(1);
-  app.locals.activeRoute = "/" + (isNaN(route.split('/')[1]) ? route.replace(/\/(?!.)/, "") : route.replace(/\/(.)/, ""));
-  app.locals.viewingCategory = req.query.category ? req.query.category : null; // Ensure category is set or null
-  next();
+app.use(express.static('public'));
+
+// Cloudinary Configuration
+cloudinary.config({
+  cloud_name: 'dcsytx0qt',
+  api_key: '797881923238455',
+  api_secret: 'zqdrKWe6gSgQz7XyrF_9a07mhcw',
+  secure: true,
 });
 
-
-// Configure Handlebars as the template engine
+// Handlebars Setup
 app.engine('.hbs', exphbs.engine({
   extname: '.hbs',
   defaultLayout: 'main',
   layoutsDir: path.join(__dirname, 'views', 'layouts'),
   helpers: {
-    navLink: function(url, options) {
+    navLink: function (url, options) {
       return `<li class="nav-item${url === options.data.root.activeRoute ? ' active' : ''}">
-                  <a class="nav-link" href="${url}">${options.fn(this)}</a>
+                <a class="nav-link" href="${url}">${options.fn(this)}</a>
               </li>`;
     },
-    equal: function(lvalue, rvalue, options) {
-      if (arguments.length < 3) {
-        throw new Error("Handlebars Helper equal needs 2 parameters");
-      }
-      return lvalue != rvalue ? options.inverse(this) : options.fn(this);
+    equal: function (lvalue, rvalue, options) {
+      if (arguments.length < 3) throw new Error("Handlebars Helper equal needs 2 parameters");
+      return lvalue !== rvalue ? options.inverse(this) : options.fn(this);
     },
-    safeHTML: function(context) {
-      return context ? new Handlebars.SafeString(context) : "";
+    safeHTML: function (context) {
+      const Handlebars = require('handlebars');
+      return new Handlebars.SafeString(context);
     }
-  }
+  },
 }));
+
 app.set('view engine', '.hbs');
-app.set('views', path.join(__dirname, 'views'));
 
-const PORT = process.env.PORT || 8080;
-cloudinary.config({
-  cloud_name: 'dcsytx0qt',
-  api_key: '797881923238455',
-  api_secret: 'zqdrKWe6gSgQz7XyrF_9a07mhcw',
-  secure: true
-  })
+// Client Sessions
+app.use(clientSessions({
+  cookieName: "session",
+  secret: "assignment6_secret_key",
+  duration: 2 * 60 * 60 * 1000,
+  activeDuration: 1000 * 60 * 30,
+}));
 
-  app.get('/categories/add', (req, res) => {
-    res.render('addCategory'); // Render the "addCategory" view (to be created)
-  });
-  app.post('/categories/add', (req, res) => {
-    storeService.addCategory(req.body)
-      .then(() => {
-        res.redirect('/categories'); // Redirect to the categories view
-      })
-      .catch((err) => {
-        res.status(500).send("Unable to Add Category"); // Handle errors
-      });
-  });
-  app.get('/categories/delete/:id', (req, res) => {
-    storeService.deleteCategoryById(req.params.id)
-      .then(() => {
-        res.redirect('/categories'); // Redirect to the categories view
-      })
-      .catch((err) => {
-        res.status(500).send("Unable to Remove Category / Category not found"); // Handle errors
-      });
-  });
-  app.get('/items/delete/:id', (req, res) => {
-    storeService.deletePostById(req.params.id)
-      .then(() => {
-        res.redirect('/items'); // Redirect to the items view
-      })
-      .catch((err) => {
-        res.status(500).send("Unable to Remove Item / Item not found"); // Handle errors
-      });
-  });
+// Middleware to Add Session to Locals
+app.use((req, res, next) => {
+  res.locals.session = req.session;
+  next();
+});
 
-// Multer configuration (no disk storage)
-const upload = multer();
-app.get('/', (req, res) => {
+// Helper Middleware for Authentication
+function ensureLogin(req, res, next) {
+  if (!req.session.user) {
+    res.redirect('/login');
+  } else {
+    next();
+  }
+}
+
+// Routes
+app.get('/', ensureLogin, (req, res) => {
   res.redirect('/shop');
 });
 
-// Redirect root to /about
-app.get('/about', (req, res) => {
-  res.render('about');
+app.get('/categories', ensureLogin, async (req, res) => {
+  let viewData = {};
+  try {
+    const categories = await storeService.getCategories();
+    if (categories.length > 0) {
+      viewData.categories = categories;
+    } else {
+      viewData.message = "no results";
+    }
+  } catch (err) {
+    viewData.message = "no results";
+  }
+  res.render('categories', { data: viewData });
 });
-  
-  // Route to fetch all items for /items
-  app.get('/items', async (req, res) => {
-    let viewData = {};
-  
-    try {
-      // Get all items
-      const items = await storeService.getAllItems();
-      if (items.length > 0) {
-        viewData.items = items;
-      } else {
-        viewData.message = "no results";
-      }
-    } catch (err) {
-      viewData.message = "no results"; // Handle promise rejection
-    }
-  
-    try {
-      // Get all categories
-      const categories = await storeService.getCategories();
-      if (categories.length > 0) {
-        viewData.categories = categories;
-      } else {
-        viewData.categoriesMessage = "no categories available";
-      }
-    } catch (err) {
-      viewData.categoriesMessage = "no categories available"; // Handle promise rejection
-    }
-  
-    // Render the "Items" view with the data or messages
-    res.render('items', { data: viewData });
-  });
-  
-  // Route to fetch all categories for /categories
-  app.get('/categories', async (req, res) => {
-    let viewData = {};
-  
-    try {
-      // Get all categories
-      const categories = await storeService.getCategories();
-      if (categories.length > 0) {
-        viewData.categories = categories;
-      } else {
-        viewData.message = "no results";
-      }
-    } catch (err) {
-      viewData.message = "no results"; // Handle promise rejection
-    }
-  
-    // Render the "categories" view with the data or messages
-    res.render('categories', { data: viewData });
-  });
-  
 
-  // to add new route to add itmes
-  app.get('/items/add', (req, res) => {
-    storeService.getCategories()
-      .then((categories) => {
-        res.render('addItem', { categories }); // Pass the categories to the view
-      })
-      .catch(() => {
-        res.render('addItem', { categories: [] }); // Render with an empty array if no categories
-      });
-  });
+app.get('/categories/add', ensureLogin, (req, res) => {
+  res.render('addCategory');
+});
 
-  // POST /items/add route to handle item creation
-app.post('/items/add', upload.single('featureImage'), (req, res) => {
+app.post('/categories/add', ensureLogin, (req, res) => {
+  storeService.addCategory(req.body)
+    .then(() => res.redirect('/categories'))
+    .catch(() => res.status(500).send("Unable to Add Category"));
+});
+
+app.get('/categories/delete/:id', ensureLogin, (req, res) => {
+  storeService.deleteCategoryById(req.params.id)
+    .then(() => res.redirect('/categories'))
+    .catch(() => res.status(500).send("Unable to Remove Category / Category not found"));
+});
+
+app.get('/items', ensureLogin, async (req, res) => {
+  let viewData = {};
+  try {
+    const items = await storeService.getAllItems();
+    if (items.length > 0) {
+      viewData.items = items;
+    } else {
+      viewData.message = "no results";
+    }
+  } catch (err) {
+    viewData.message = "no results";
+  }
+
+  try {
+    const categories = await storeService.getCategories();
+    if (categories.length > 0) {
+      viewData.categories = categories;
+    } else {
+      viewData.categoriesMessage = "no categories available";
+    }
+  } catch (err) {
+    viewData.categoriesMessage = "no categories available";
+  }
+
+  res.render('items', { data: viewData });
+});
+
+app.get('/items/add', ensureLogin, (req, res) => {
+  storeService.getCategories()
+    .then((categories) => res.render('addItem', { categories }))
+    .catch(() => res.render('addItem', { categories: [] }));
+});
+
+app.post('/items/add', ensureLogin, multer().single('featureImage'), (req, res) => {
   if (req.file) {
     let streamUpload = (req) => {
       return new Promise((resolve, reject) => {
@@ -199,64 +176,38 @@ app.post('/items/add', upload.single('featureImage'), (req, res) => {
 
     upload(req).then((uploaded) => {
       processItem(uploaded.url);
-    }).catch((error) => {
-      console.error('Upload failed:', error);
-      res.status(500).send('Failed to upload image');
-    });
+    }).catch(() => res.status(500).send('Failed to upload image'));
   } else {
     processItem('');
   }
 
   function processItem(imageUrl) {
     req.body.featureImage = imageUrl;
-    storeService.addItem(req.body).then(() => {
-      res.redirect('/items');
-    }).catch((err) => {
-      res.status(500).send('Failed to add item');
-    });
+    storeService.addItem(req.body)
+      .then(() => res.redirect('/items'))
+      .catch(() => res.status(500).send('Failed to add item'));
   }
 });
 
-// Route to fetch all items with optional filters
-app.get('/items', (req, res) => {
-  const { category, minDate } = req.query;
-
-  if (category) {
-    storeService.getItemsByCategory(category)
-      .then((data) => res.json(data))
-      .catch((err) => res.status(500).json({ message: err }));
-  } else if (minDate) {
-    storeService.getItemsByMinDate(minDate)
-      .then((data) => res.json(data))
-      .catch((err) => res.status(500).json({ message: err }));
-  } else {
-    storeService.getAllItems()
-      .then((data) => res.json(data))
-      .catch((err) => res.status(500).json({ message: err }));
-  }
+app.get('/items/delete/:id', ensureLogin, (req, res) => {
+  storeService.deletePostById(req.params.id)
+    .then(() => res.redirect('/items'))
+    .catch(() => res.status(500).send("Unable to Remove Item / Item not found"));
 });
 
-
-// Route to fetch all published items for /shop
-app.get('/shop', async (req, res) => {
+app.get('/shop', ensureLogin, async (req, res) => {
   let viewData = {};
   const category = req.query.category;
   const selectedItemId = req.query.id ? parseInt(req.query.id) : null;
 
   try {
-    // Fetch items filtered by category, if provided
-    if (category) {
-      viewData.posts = await storeService.getPublishedItemsByCategory(category);
-    } else {
-      viewData.posts = await storeService.getPublishedItems();
-    }
+    viewData.posts = category ? await storeService.getPublishedItemsByCategory(category) : await storeService.getPublishedItems();
   } catch (err) {
     viewData.posts = [];
     viewData.message = "No items available.";
   }
 
   try {
-    // Fetch categories for the sidebar
     viewData.categories = await storeService.getCategories();
   } catch (err) {
     viewData.categories = [];
@@ -264,12 +215,7 @@ app.get('/shop', async (req, res) => {
   }
 
   try {
-    // Fetch the selected item's details, if an ID is provided
-    if (selectedItemId) {
-      viewData.post = await storeService.getItemById(selectedItemId);
-    } else {
-      viewData.post = null;
-    }
+    viewData.post = selectedItemId ? await storeService.getItemById(selectedItemId) : null;
   } catch (err) {
     viewData.post = null;
     viewData.message = "Item not found.";
@@ -277,56 +223,43 @@ app.get('/shop', async (req, res) => {
 
   res.render('shop', { data: viewData });
 });
-  
-  // Handle non-matching routes (404)
-  app.use((req, res) => {
-    res.status(404).render('404');
-});
 
-app.get('/shop/:id', async (req, res) => {
-  let viewData = {};
-  const id = parseInt(req.params.id); // Convert the id to an integer
-
-  try {
-    console.log("Fetching item with ID:", id); // Debugging
-    // Fetch the specific item by ID
-    const item = await storeService.getItemById(id);
-    console.log("Item fetched:", item); // Debugging
-    viewData.post = item;
-  } catch (err) {
-    console.error("Error fetching item:", err); // Debugging
-    viewData.post = null;
-    viewData.message = "Item not found.";
-  }
-
-  try {
-    // Fetch all published items for the sidebar
-    const items = await storeService.getPublishedItems();
-    viewData.posts = items;
-  } catch (err) {
-    viewData.posts = [];
-    viewData.message = "No items available.";
-  }
-
-  try {
-    // Fetch all categories for the sidebar
-    const categories = await storeService.getCategories();
-    viewData.categories = categories;
-  } catch (err) {
-    viewData.categories = [];
-    viewData.categoriesMessage = "No categories available.";
-  }
-
-  res.render('shop', { data: viewData });
-});
-  // Initialize the store service and then start the server
-storeService.initialize()
-.then(() => {
-  app.listen(PORT, () => {
-    console.log(`Express http server listening on port ${PORT}`);
+app.get('/about', (req, res) => {
+  res.render('about');
   });
-})
-.catch((err) => {
-  console.log("Failed to initialize the store: " + err);
+
+// Other Routes (Login, Register, Logout, User History, 404)
+app.get('/login', (req, res) => res.render('login'));
+app.post('/login', (req, res) => {
+  req.body.userAgent = req.get('User-Agent');
+  authData.checkUser(req.body)
+    .then((user) => {
+      req.session.user = { userName: user.userName, email: user.email, loginHistory: user.loginHistory };
+      res.redirect('/shop');
+    })
+    .catch((err) => res.render('login', { errorMessage: err, userName: req.body.userName }));
 });
 
+app.get('/register', (req, res) => res.render('register'));
+app.post('/register', (req, res) => {
+  authData.registerUser(req.body)
+    .then(() => res.render('register', { successMessage: "User created" }))
+    .catch((err) => res.render('register', { errorMessage: err, userName: req.body.userName }));
+});
+
+app.get('/logout', (req, res) => {
+  req.session.reset();
+  res.redirect('/');
+});
+
+app.get('/userHistory', ensureLogin, (req, res) => res.render('userHistory', { user: req.session.user }));
+
+app.use((req, res) => res.status(404).render('404'));
+
+// Initialize Services and Start Server
+storeService.initialize()
+  .then(authData.initialize)
+  .then(() => {
+    app.listen(PORT, () => console.log(`Express HTTP server listening on port ${PORT}`));
+  })
+  .catch((err) => console.log("Unable to start server: " + err));

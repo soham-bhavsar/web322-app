@@ -9,8 +9,8 @@ const { gte } = Sequelize.Op; // Destructure the 'greater than or equal to' oper
 
 // Replace these values with your ElephantSQL database credentials
 const sequelize = new Sequelize('SenecaDB', 'SenecaDB_owner', 'vGiFhE5su7wI', {
-    host: 'ep-purple-heart-a5smy7v0-pooler.us-east-2.aws.neon.tech', // e.g., your ElephantSQL hostname
-    dialect: 'postgres',
+  host: 'ep-purple-heart-a5smy7v0-pooler.us-east-2.aws.neon.tech', // e.g., your ElephantSQL hostname
+  dialect: 'postgres',
     port: 5432, // Default PostgreSQL port
     dialectOptions: {
         ssl: { rejectUnauthorized: false } // Enables SSL for secure connection
@@ -88,11 +88,11 @@ function addItem(itemData) {
               })
               .catch((err) => {
                   // Reject the promise with a meaningful message if there's an error
-                  reject(`Unable to create post: ${err.message || "Error occurred"}`);
+                  reject("Unable to create post: ${err.message || 'Error occurred'}");
               });
       } catch (error) {
           // Handle unexpected errors
-          reject(`Unexpected error: ${error.message}`);
+          reject("Unexpected error: ${error.message}");
       }
   });
 }
@@ -193,7 +193,7 @@ function getItemsByMinDate(minDateStr) {
         })
         .catch((err) => {
             // Handle any error that occurs during the operation
-            reject(`Error fetching items: ${err.message || 'no results returned'}`);
+            reject("Error fetching items: ${err.message || 'no results returned'}");
         });
     });
 }
@@ -217,7 +217,7 @@ function getItemById(id) {
       })
       .catch((err) => {
           // Handle any error that occurs during the operation
-          reject(`Error fetching item by ID: ${err.message || 'no results returned'}`);
+          reject("Error fetching item by ID: ${err.message || 'no results returned'}");
       });
   });
 }
